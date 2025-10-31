@@ -147,7 +147,7 @@ while rodando:
     # pygame.draw.rect(tela, (255,51,255), jogador)
 
     for obstaculo in obstaculos:
-        pygame.draw.rect(tela, (255,0,0), obstaculo)
+        tela.blit(imagem_obstaculo, obstaculo)
     
     texto_pontos = fonte.render(f"Pontos: {pontuacao}", True, (255,255,255))
     tela.blit(texto_pontos, (largura - 130, 10))
