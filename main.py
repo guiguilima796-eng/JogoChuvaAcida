@@ -17,7 +17,7 @@ def criar_banco():
 def registrar_jogador(nome):
     conexao = sqlite3.connect("ranking.db")
     cursor = conexao.cursor()
-    cursor.execute("INSERT INTO jogadores (nome,pontuacao) VALUES(?,0)",(nome,))
+    cursor.execute("INSERT OR IGNORE INTO jogadores (nome,pontuacao) VALUES(?,0)",(nome,))
     conexao.commit()
     conexao.close()
 
@@ -95,12 +95,16 @@ fonte_grande = pygame.font.Font(None, 48)
 rodando = True
 game_over = False
 nome_jogador = solicitar_nome()
+registrar_jogador(nome_jogador)
+mostrar_ranking = False
+
 imagem_jogador=pygame.image.load('./imgs/boy.png').convert_alpha()
 imagem_obstaculo=pygame.image.load('./imgs/gota.png').convert_alpha()
 imagem_background=pygame.image.load('./imgs/background.jpg').convert_alpha()
 imagem_jogador=pygame.transform.scale(imagem_jogador,(40,40))
 imagem_obstaculo=pygame.transform.scale(imagem_obstaculo,(30,30))
 imagem_background= pygame.transform.scale(imagem_background,(largura,altura))
+
 
 
 # lógica de funcionamento do jogo
@@ -111,6 +115,7 @@ while rodando:
         if game_over and evento.type == pygame.KEYDOWN and evento.key == pygame.K_r:
             jogador, obstaculos, pontuacao = reiniciar_jogo()
             game_over = False
+            mostrar_ranking = False
 
     if not game_over:
         teclas = pygame.key.get_pressed()
@@ -130,14 +135,20 @@ while rodando:
 
         if random.randint(1,7) == 1:
             obstaculos.append(pygame.Rect(random.randint(0, largura - 30), 0, 30, 30))
-        
+
+        pontuacao += 1
+
         for obstaculo in obstaculos:
             obstaculo.y += 8
             if obstaculo.colliderect(jogador):
                 game_over = True
+                atualizar_pontuacao(nome_jogador,pontuacao)
+                ranking = obter_ranking()
+                mostrar_ranking = True
+
         
         obstaculos = [obstaculo for obstaculo in obstaculos if obstaculo.y < altura]
-        pontuacao += 1
+        
 
     #tela.fill((30,30,30))
     tela.blit(imagem_background,(0,0))
@@ -156,13 +167,28 @@ while rodando:
     tela.blit(texto_nome, (largura - 180, 40))
 
     if game_over:
+        # tela.blit(texto_atualizacao, (largura // 2 - 80, altura // 2 - 30))
         texto_game_over = fonte.render("GAME OVER!", True, (255, 255, 0))
-        texto_reiniciar = fonte.render("Pressione R para reiniciar", True, (255, 255, 255))
-        
-        texto_final = fonte.render(f"Jogador: {nome_jogador} - Pontos: {pontuacao}", True, (0, 255, 0))
-        
         tela.blit(texto_game_over, (largura // 2 - 80, altura // 2 - 30))
+        texto_final = fonte.render(f"Jogador: {nome_jogador} - Pontos: {pontuacao}", True, (0, 255, 0))
         tela.blit(texto_final, (largura // 2 - 130, altura // 2 - 10))
+
+        if mostrar_ranking:
+            ranking = obter_ranking()
+            texto_ranking = fonte.render("🏆 TOP 3 🏆", True, (255, 0, 0))
+            tela.blit(texto_ranking, (largura // 2 - 70, 130))
+
+            for i, (nome, pontos) in enumerate(ranking[:3]):
+                cor = (255, 215, 0) if i == 0 else (192, 192, 192) if i == 1 else (205, 127, 50)
+                texto = fonte.render(f"{i+1}. {nome} - {pontos}", True, cor)
+                tela.blit(texto, (largura // 2 - 130, 170 + i * 30))
+
+            posicao = next((i+1 for i, (nome, _) in enumerate(ranking) if nome == nome_jogador), None)
+            if posicao:
+                texto_posicao = fonte.render(f"Sua posição: {posicao}º", True, (0, 255, 0))
+                tela.blit(texto_posicao, (largura // 2 - 100, 280))
+
+        texto_reiniciar = fonte.render("Pressione R para reiniciar", True, (255, 255, 255))
         tela.blit(texto_reiniciar, (largura // 2 - 150, altura // 2 + 10))
 
     # atualiza a tela
